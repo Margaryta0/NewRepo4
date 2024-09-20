@@ -38,14 +38,14 @@ int main() {
         // A <БО1> <УО> B <АО1> <СО> C <ОВ> D <АО2> E <БО2> <БазО> F
         //((constA & +  nB) /    *  pnC) > (-593 + (nE <<  sizeof (float)))
 
-        const int constA = 41;
-        int nB, nE;
-        nB = -13;
-        nE = 12;
-        int nC;
-        int* pnC;
-        pnC = &nC;
-        *pnC = 20;
+        const int constA = 41;//опис константи та присвоєння їй значення
+        int nB, nE;// опис змінних В та Е
+        nB = -13;//ініціалізуємо змінну nB
+        nE = 12;//ініціалізуємо змінну nE
+        int nC;//опис змінної С
+        int* pnC;//опис вказівної змінної
+        pnC = &nC;//ініціалізуємо вказівну змінну адресою змінни nC 
+        *pnC = 20; //розіменування
 
         bool bRes = ((constA & +nB) / *pnC) > (-593 + (nE << sizeof(float)));
         cout << "bRes: " << boolalpha << bRes << endl;
