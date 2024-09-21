@@ -25,7 +25,7 @@ int main() {
 	cin >> A;
 
 	int countBits = sizeof(int) * 8;
-	int countOnes;
+	int countOnes = 0;
 
 	for (int i = 0; i < countBits; i++) {
 		int mask = 1 << i;
@@ -70,7 +70,7 @@ int main() {
 	std::vector<int>a(n);
 	std::vector<int>b(n);
 
-	for (int i = o; i < n; i++) {
+	for (int i = 0; i < n; i++) {
 		a[i] = rand() % 2;
 		b[i] = rand() % 2;
 	}
