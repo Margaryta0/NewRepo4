@@ -2,7 +2,7 @@
  * Done by:
  * Student Name: Margaryta Smal
  * Student Group: 123
- * Lab 1.5
+ * Lab 1.6
  */
 #include<iostream>
 
