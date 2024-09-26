@@ -19,7 +19,7 @@ void printValue(void* ptr, char type) {
     }
 }
 
-int main() {
+/*int main() {
     // Declare different types of variables
     int intValue = 42;
     float floatValue = 3.14f;
