@@ -32,6 +32,7 @@ int main() {
 		double dblD;
 		int nE;
 		char chP;
+		int* ptr = new float;
 
 		dblD = nA;
 		nE = fltB;

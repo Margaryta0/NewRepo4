@@ -23,7 +23,7 @@ std::string caesarEncrypt(const std::string& text, int shift) {
     return result;
 }
 
-int main() {
+/*int main() {
     std::string text;
     int shift;
 
