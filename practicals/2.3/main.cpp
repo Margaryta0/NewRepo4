@@ -1,4 +1,11 @@
-﻿#include <iostream>
+﻿/**
+ * Done by:
+ * Student Name: Smal Margaryta
+ * Student Group: 123
+ * Practic 2.3
+ */
+
+#include <iostream>
 #include<iomanip>
 #include<vector>
 using namespace std;
