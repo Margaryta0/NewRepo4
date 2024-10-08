@@ -1,5 +1,7 @@
 ﻿#include<iostream>
 
+using namespace std;
+
 int main() {
 
 	{//Завдання 1:
