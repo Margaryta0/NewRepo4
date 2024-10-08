@@ -1,4 +1,11 @@
-﻿#include<iostream>
+﻿/**
+ * Done by:
+ * Student Name: Margaryta Smal
+ * Student Group: 123
+ * Lab 2.1
+ */
+
+#include<iostream>
 
 using namespace std;
 
