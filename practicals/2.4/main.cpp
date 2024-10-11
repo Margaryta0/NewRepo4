@@ -30,6 +30,10 @@ void setRandomColor() {
 	cout << "\033[" << color << "m";
 }
 
+void ColorForTree() {
+	cout << "\033[32m";
+}
+
 void resetColor() {
 	cout << "\033[0m";
 }
@@ -69,10 +73,13 @@ int main() {
 			setRandomColor();
 			for (int j = 0; j < levels[a][i]; j++) {
 				if (rand() % 5 == 0) {
+					setRandomColor();
 					cout << toys[rand() % 4];
 					file << toys[rand() % 4];
+					resetColor();
 				}
 				else {
+					ColorForTree();
 					cout << star;
 					file << star;
 				}
