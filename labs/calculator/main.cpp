@@ -1,3 +1,9 @@
+/**
+ * Done by:
+ * Student Name: Margaryta Smal
+ * Student Group: 123
+ * Lab - calculator
+ */
 #include<iostream>
 #include<string>
 #include<stack>
