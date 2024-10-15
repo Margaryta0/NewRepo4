@@ -19,6 +19,7 @@ int precedence(char c) {
 	else if (c == '*' || c == '/') {
 		return 2;
 	}
+	return 0;
 }
 
 string infixToPostfix(const string& expression) {
