@@ -11,7 +11,7 @@ Rhombus::Rhombus(int Ax, int Ay, int Bx, int By, int Cx, int Cy, int Dx, int Dy)
 	D = { Dx, Dy };
 };
 
-double Rhombus::getPerimetr() {
+double Rhombus::getPerimeter() {
 	double side = sqrt(((B.x - A.x) * (B.x - A.x)) + ((B.y - A.y) * (B.y - A.y)));
 	double perimetr = 4 * side;
 	return perimetr;

@@ -15,6 +15,6 @@ private:
 
 public:
 	Rhombus(int Ax, int Ay, int Bx, int By, int Cx, int Cy, int Dx, int Dy);
-	double getPerimetr();
+	double getPerimeter();
 	double getArea();
 };

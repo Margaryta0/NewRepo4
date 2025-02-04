@@ -3,7 +3,7 @@
 using namespace std;
 
 void outputData(Rhombus& rhombus) {
-    float perimetr = rhombus.getPerimetr();
+    float perimetr = rhombus.getPerimeter();
     float area = rhombus.getArea();
     cout << "Perimetr of rhombus: " << perimetr << endl;
     cout << "Area of rhombus: " << area << endl;
