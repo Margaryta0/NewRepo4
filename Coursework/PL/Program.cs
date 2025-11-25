@@ -1,7 +1,9 @@
-﻿using BLL.Entities;
+﻿using BLL;
+using BLL.Entities;
 using BLL.Services;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Xml.Linq;
 
@@ -12,7 +14,7 @@ namespace PL
         private static StudentService studentService;
         private static GroupService groupService;
         private static DormitoryService dormitoryService;
-        private static SearchService searchService;
+        private static SearchService searchService; 
 
         static void Main(string[] args)
         {
@@ -158,7 +160,10 @@ namespace PL
             string firstName = Console.ReadLine();
 
             Console.Write("Курс (1-6): ");
-            int course = int.Parse(Console.ReadLine());
+            if (!int.TryParse(Console.ReadLine(), out int course))
+            {
+                throw new StudentInvalidDataException("Некоректний формат курсу");
+            }
 
             studentService.AddStudent(id, lastName, firstName, course);
             Console.WriteLine("\n:) Студента успішно додано!");
@@ -173,7 +178,7 @@ namespace PL
             string id = Console.ReadLine().ToUpper();
 
             var student = studentService.GetStudentByID(id);
-            Console.WriteLine($"\nВидалити студента: {student}");
+            Console.WriteLine($"\nВидалити студента: {student.FirstName} {student.LastName} ({student.StudentID})");
             Console.Write("Ви впевнені? (так/ні): ");
 
             if (Console.ReadLine().ToLower() == "так")
@@ -209,8 +214,12 @@ namespace PL
 
             Console.Write($"Курс [{student.Course}]: ");
             string courseInput = Console.ReadLine();
-            int course = string.IsNullOrWhiteSpace(courseInput) ? student.Course : int.Parse(courseInput);
-
+            int course = student.Course;
+            if (!string.IsNullOrWhiteSpace(courseInput))
+            {
+                if (!int.TryParse(courseInput, out course))
+                    throw new StudentInvalidDataException("Некоректний формат курсу");
+            }
 
             studentService.UpdateStudent(id, lastName, firstName, course);
             Console.WriteLine("\n:) Дані оновлено!");
@@ -246,8 +255,16 @@ namespace PL
 
             var student = studentService.GetStudentByID(id);
             ShowStudent(student);
-            Console.WriteLine($"Група: {(student.GroupID.HasValue ? student.GroupID.ToString() : "не призначена")}");
-            Console.WriteLine($"Гуртожиток: {(student.DormitoryRoomID.HasValue ? "поселений" : "не поселений")}");
+
+            var allGroups = groupService.GetAllGroups();
+            var studentGroup = allGroups.FirstOrDefault(g => g.StudentIDs.Contains(student.StudentID));
+
+            var allDorms = dormitoryService.GetAllDormitories();
+            var studentDormitory = allDorms.FirstOrDefault(d => d.Rooms.Any(r => r.OccupantIDs.Contains(student.StudentID)));
+            var studentRoom = studentDormitory?.Rooms.FirstOrDefault(r => r.OccupantIDs.Contains(student.StudentID));
+
+            Console.WriteLine($"Група: {(studentGroup != null ? $"{studentGroup.Name} (ID: {studentGroup.Id})" : "не призначена")}");
+            Console.WriteLine($"Гуртожиток: {(studentRoom != null ? $"{studentDormitory.Name}, Кімната {studentRoom.RoomNumber}" : "не поселений")}");
         }
 
         static void GroupMenu()
@@ -261,7 +278,7 @@ namespace PL
                 Console.WriteLine("2. Видалити групу");
                 Console.WriteLine("3. Змінити дані групи");
                 Console.WriteLine("4. Переглянути всі групи");
-                Console.WriteLine("5. Переглянути дані групи");
+                Console.WriteLine("5. Переглянути дані групи та студентів");
                 Console.WriteLine("6. Додати студента до групи");
                 Console.WriteLine("7. Видалити студента з групи");
                 Console.WriteLine("0. Назад");
@@ -286,7 +303,7 @@ namespace PL
                             ViewAllGroups();
                             break;
                         case "5":
-                            ViewGroup();
+                            ViewGroup(); 
                             break;
                         case "6":
                             AddStudentToGroup();
@@ -324,7 +341,10 @@ namespace PL
             string name = Console.ReadLine();
 
             Console.Write("Курс (1-6): ");
-            int course = int.Parse(Console.ReadLine());
+            if (!int.TryParse(Console.ReadLine(), out int course))
+            {
+                throw new StudentInvalidDataException("Некоректний формат курсу");
+            }
 
             Console.Write("Спеціальність: ");
             string specialty = Console.ReadLine();
@@ -340,10 +360,13 @@ namespace PL
 
             ViewAllGroups();
             Console.Write("\nID групи: ");
-            int id = int.Parse(Console.ReadLine());
+            if (!int.TryParse(Console.ReadLine(), out int id))
+            {
+                throw new StudentInvalidDataException("Некоректний формат ID групи");
+            }
 
             var group = groupService.GetGroupById(id);
-            Console.WriteLine($"\nВидалити групу: {group}");
+            Console.WriteLine($"\nВидалити групу: {group.Name}");
             Console.Write("Ви впевнені? (так/ні): ");
 
             if (Console.ReadLine().ToLower() == "так")
@@ -360,7 +383,10 @@ namespace PL
 
             ViewAllGroups();
             Console.Write("\nID групи: ");
-            int id = int.Parse(Console.ReadLine());
+            if (!int.TryParse(Console.ReadLine(), out int id))
+            {
+                throw new StudentInvalidDataException("Некоректний формат ID групи");
+            }
 
             var group = groupService.GetGroupById(id);
             Console.WriteLine("\nПоточні дані: ");
@@ -372,7 +398,12 @@ namespace PL
 
             Console.Write($"Курс [{group.Course}]: ");
             string courseInput = Console.ReadLine();
-            int course = string.IsNullOrWhiteSpace(courseInput) ? group.Course : int.Parse(courseInput);
+            int course = group.Course;
+            if (!string.IsNullOrWhiteSpace(courseInput))
+            {
+                if (!int.TryParse(courseInput, out course))
+                    throw new StudentInvalidDataException("Некоректний формат курсу");
+            }
 
             Console.Write($"Спеціальність [{group.Specialty}]: ");
             string specialty = Console.ReadLine();
@@ -405,12 +436,15 @@ namespace PL
             Console.Clear();
             ViewAllGroups();
             Console.Write("\nID групи: ");
-            int id = int.Parse(Console.ReadLine());
+            if (!int.TryParse(Console.ReadLine(), out int id))
+            {
+                throw new StudentInvalidDataException("Некоректний формат ID групи");
+            }
 
             var group = groupService.GetGroupById(id);
-            var students = groupService.GetStudentsInGroup(id);
+            var students = searchService.SearchByGroupId(id);
 
-            Console.WriteLine("\nСтуденти групи:");
+            Console.WriteLine($"\nСтуденти групи {group.Name} (ID: {group.Id}):");
             if (students.Count == 0)
             {
                 Console.WriteLine("(немає студентів)");
@@ -431,7 +465,10 @@ namespace PL
 
             ViewAllGroups();
             Console.Write("\nID групи: ");
-            int groupId = int.Parse(Console.ReadLine());
+            if (!int.TryParse(Console.ReadLine(), out int groupId))
+            {
+                throw new StudentInvalidDataException("Некоректний формат ID групи");
+            }
 
             Console.Write("ID студента: ");
             string studentId = Console.ReadLine().ToUpper();
@@ -445,8 +482,12 @@ namespace PL
             Console.Clear();
             Console.WriteLine("=== ВИДАЛИТИ СТУДЕНТА З ГРУПИ ===\n");
 
-            Console.Write("ID групи: ");
-            int groupId = int.Parse(Console.ReadLine());
+            ViewAllGroups();
+            Console.Write("\nID групи: ");
+            if (!int.TryParse(Console.ReadLine(), out int groupId))
+            {
+                throw new StudentInvalidDataException("Некоректний формат ID групи");
+            }
 
             Console.Write("ID студента: ");
             string studentId = Console.ReadLine().ToUpper();
@@ -454,6 +495,7 @@ namespace PL
             groupService.RemoveStudentFromGroup(groupId, studentId);
             Console.WriteLine("\nСтудента видалено з групи!");
         }
+
         static void DormitoryMenu()
         {
             bool back = false;
@@ -465,7 +507,7 @@ namespace PL
                 Console.WriteLine("2. Додати кімнату");
                 Console.WriteLine("3. Поселити студента");
                 Console.WriteLine("4. Виписати студента");
-                Console.WriteLine("5. Переглянути гуртожитки");
+                Console.WriteLine("5. Переглянути гуртожитки та кімнати");
                 Console.WriteLine("6. Переглянути вільні кімнати");
                 Console.WriteLine("0. Назад");
                 Console.Write("\nВаш вибір: ");
@@ -537,13 +579,19 @@ namespace PL
 
             ViewDormitories();
             Console.Write("\nID гуртожитку: ");
-            int dormId = int.Parse(Console.ReadLine());
+            if (!int.TryParse(Console.ReadLine(), out int dormId))
+            {
+                throw new StudentInvalidDataException("Некоректний формат ID гуртожитку");
+            }
 
             Console.Write("Номер кімнати: ");
             string roomNumber = Console.ReadLine();
 
             Console.Write("Максимальна кількість студентів (1-4): ");
-            int capacity = int.Parse(Console.ReadLine());
+            if (!int.TryParse(Console.ReadLine(), out int capacity))
+            {
+                throw new StudentInvalidDataException("Некоректний формат місткості");
+            }
 
             dormitoryService.AddRoom(dormId, roomNumber, capacity);
             Console.WriteLine("\n:) Кімнату додано!");
@@ -556,7 +604,10 @@ namespace PL
 
             ViewDormitories();
             Console.Write("\nID гуртожитку: ");
-            int dormId = int.Parse(Console.ReadLine());
+            if (!int.TryParse(Console.ReadLine(), out int dormId))
+            {
+                throw new StudentInvalidDataException("Некоректний формат ID гуртожитку");
+            }
 
             Console.Write("Номер кімнати: ");
             string roomNumber = Console.ReadLine();
@@ -575,7 +626,10 @@ namespace PL
 
             ViewDormitories();
             Console.Write("\nID гуртожитку: ");
-            int dormId = int.Parse(Console.ReadLine());
+            if (!int.TryParse(Console.ReadLine(), out int dormId))
+            {
+                throw new StudentInvalidDataException("Некоректний формат ID гуртожитку");
+            }
 
             Console.Write("ID студента: ");
             string studentId = Console.ReadLine().ToUpper();
@@ -614,7 +668,10 @@ namespace PL
 
             ViewDormitories();
             Console.Write("\nID гуртожитку: ");
-            int dormId = int.Parse(Console.ReadLine());
+            if (!int.TryParse(Console.ReadLine(), out int dormId))
+            {
+                throw new StudentInvalidDataException("Некоректний формат ID гуртожитку");
+            }
 
             var rooms = dormitoryService.GetAvailableRooms(dormId);
 
@@ -631,6 +688,7 @@ namespace PL
                 ShowRoom(room);
             }
         }
+
         static void SearchMenu()
         {
             bool back = false;
@@ -638,7 +696,7 @@ namespace PL
             {
                 Console.Clear();
                 Console.WriteLine("=====ПОШУК=====");
-                Console.WriteLine("1. Пошук за ім'ям/прізвищем");
+                Console.WriteLine("1. Пошук за ім'ям/прізвищем/ID");
                 Console.WriteLine("2. Пошук студентів групи");
                 Console.WriteLine("3. Пошук студентів у гуртожитку");
                 Console.WriteLine("0. Назад");
@@ -683,9 +741,9 @@ namespace PL
         static void SearchByName()
         {
             Console.Clear();
-            Console.WriteLine("=== ПОШУК ЗА ІМ'ЯМ/ПРІЗВИЩЕМ ===\n");
+            Console.WriteLine("=== ПОШУК ЗА ІМ'ЯМ/ПРІЗВИЩЕМ/ID ===\n");
 
-            Console.Write("Введіть ім'я або прізвище: ");
+            Console.Write("Введіть ім'я, прізвище або ID: ");
             string searchTerm = Console.ReadLine();
 
             var results = searchService.SearchByName(searchTerm);
@@ -710,7 +768,10 @@ namespace PL
 
             ViewAllGroups();
             Console.Write("\nID групи: ");
-            int groupId = int.Parse(Console.ReadLine());
+            if (!int.TryParse(Console.ReadLine(), out int groupId))
+            {
+                throw new StudentInvalidDataException("Некоректний формат ID групи");
+            }
 
             var results = searchService.SearchByGroupId(groupId);
 
@@ -734,7 +795,10 @@ namespace PL
 
             ViewDormitories();
             Console.Write("\nID гуртожитку: ");
-            int dormId = int.Parse(Console.ReadLine());
+            if (!int.TryParse(Console.ReadLine(), out int dormId))
+            {
+                throw new StudentInvalidDataException("Некоректний формат ID гуртожитку");
+            }
 
             var results = searchService.SearchByDormitory(dormId);
 
@@ -753,23 +817,17 @@ namespace PL
 
         static void ShowStudent(Student student)
         {
-            Console.WriteLine("ID: " + student.StudentID);
-            Console.WriteLine("Last Name: " + student.LastName);
-            Console.WriteLine("FirstName: " + student.FirstName);
-            Console.WriteLine("Course: " + student.Course);
+            Console.WriteLine($"ID: {student.StudentID}, Прізвище: {student.LastName}, Ім'я: {student.FirstName}, Курс: {student.Course}");
         }
 
         static void ShowGroup(Group group)
         {
-            Console.WriteLine(" - ID of group: " + group.Id);
-            Console.WriteLine("Name: " + group.Name);
-            Console.WriteLine("Speciality: " + group.Specialty);
-            Console.WriteLine("Course: " + group.Course);
+            Console.WriteLine($" - ID: {group.Id}, Назва: {group.Name}, Спеціальність: {group.Specialty}, Курс: {group.Course}, Студентів: {group.GetStudentCount()}");
         }
 
         static void ShowDormitory(Dormitory dormitory)
         {
-            Console.WriteLine($"{dormitory.Name} ({dormitory.Address}) - Кімнат: {dormitory.Rooms.Count}, Мешканців: {dormitory.GetTotalOccupants()}/{dormitory.GetTotalCapacity()}");
+            Console.WriteLine($"{dormitory.Name} ({dormitory.Address}) - ID: {dormitory.Id}, Кімнат: {dormitory.Rooms.Count}, Мешканців: {dormitory.GetTotalOccupants()}/{dormitory.GetTotalCapacity()}");
         }
 
         static void ShowRoom(DormitoryRoom room)

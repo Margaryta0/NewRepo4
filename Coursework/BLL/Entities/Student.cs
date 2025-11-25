@@ -1,3 +1,4 @@
+﻿using DAL;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,14 +8,15 @@ using System.Threading.Tasks;
 
 namespace BLL.Entities
 {
-    public class Student
+    public class Student : IEntity<string>
     {
         public string StudentID { get; set; }
+
+        public string Id { get => StudentID; set => StudentID = value; }
+
         public string LastName { get; set; }
         public string FirstName { get; set; }
         public int Course { get; set; }
-        public int? DormitoryRoomID { get; set; }
-        public int? GroupID { get; set; }
 
         public Student() { }
 
@@ -42,7 +44,5 @@ namespace BLL.Entities
 
             return true;
         }
-
-
     }
 }

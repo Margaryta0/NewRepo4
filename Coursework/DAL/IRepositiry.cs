@@ -1,3 +1,4 @@
+﻿
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,16 +7,14 @@ using System.Threading.Tasks;
 
 namespace DAL
 {
-    public interface IRepositiry<T> where T : class
+    public interface IRepositiry<T, TId> where T : class, IEntity<TId>
     {
-        void SaveAll(List<T> items);
+        T GetById(TId id);
+        List<T> GetAll();
+        void Add(T entity);
+        void Update(T entity);
+        void Delete(TId id);
 
-        List<T> LoadAll();
-
-        bool FileExists();
-
-        void DeleteFile();
-
-        string GetFilePath();
+        TId GetNextId();
     }
 }

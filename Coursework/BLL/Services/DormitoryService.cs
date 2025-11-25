@@ -2,6 +2,7 @@
 using DAL;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,14 +11,12 @@ namespace BLL.Services
 {
     public class DormitoryService
     {
-        private List<Dormitory> _dormitories;
-        private readonly JsonRepository<Dormitory> _repository;
+        private readonly IRepositiry<Dormitory, int> _repository;
         private readonly StudentService _studentService;
 
         public DormitoryService(StudentService studentService)
         {
-            _repository = new JsonRepository<Dormitory>("dormitories.json");
-            _dormitories = _repository.LoadAll();
+            _repository = new JsonRepository<Dormitory, int>("dormitories.json");
             _studentService = studentService;
         }
 
@@ -29,10 +28,11 @@ namespace BLL.Services
             if (string.IsNullOrWhiteSpace(address))
                 throw new StudentInvalidDataException("Адреса не може бути порожньою");
 
-            if (_dormitories.Any(d => d.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+            var allDormitories = _repository.GetAll();
+            if (allDormitories.Any(d => d.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
                 throw new StudentInvalidDataException($"Гуртожиток з назвою {name} вже існує");
 
-            int newId = _dormitories.Any() ? _dormitories.Max(d => d.Id) + 1 : 1;
+            int newId = (int)(object)_repository.GetNextId();
 
             var dormitory = new Dormitory
             {
@@ -41,8 +41,7 @@ namespace BLL.Services
                 Address = address.Trim()
             };
 
-            _dormitories.Add(dormitory);
-            _repository.SaveAll(_dormitories);
+            _repository.Add(dormitory);
         }
 
         public void DeleteDormitory(int dormitoryId)
@@ -51,15 +50,10 @@ namespace BLL.Services
 
             foreach (var room in dormitory.Rooms)
             {
-                foreach (var studentID in room.OccupantIDs.ToList())
-                {
-                    CheckOutStudent(dormitoryId, studentID);
-
-                }
+                room.OccupantIDs.Clear();
             }
 
-            _dormitories.Remove(dormitory);
-            _repository.SaveAll(_dormitories);
+            _repository.Delete(dormitoryId);
         }
 
         public void UpdateDormitory(int dormitoryId, string name, string address)
@@ -72,10 +66,14 @@ namespace BLL.Services
             if (string.IsNullOrWhiteSpace(address))
                 throw new StudentInvalidDataException("Адреса не може бути порожньою");
 
+            var allDormitories = _repository.GetAll();
+            if (allDormitories.Any(d => d.Id != dormitoryId && d.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+                throw new StudentInvalidDataException($"Гуртожиток з назвою {name} вже існує");
+
             dormitory.Name = name.Trim();
             dormitory.Address = address.Trim();
 
-            _repository.SaveAll(_dormitories);
+            _repository.Update(dormitory);
         }
 
         public void AddRoom(int dormitoryId, string roomNumber, int maxCapacity)
@@ -89,9 +87,10 @@ namespace BLL.Services
                 throw new StudentInvalidDataException("Місткість кімнати має бути від 1 до 4");
 
             var room = new DormitoryRoom(roomNumber.Trim(), maxCapacity);
+
             dormitory.AddRoom(room);
 
-            _repository.SaveAll(_dormitories);
+            _repository.Update(dormitory);
         }
 
         public void RemoveRoom(int dormitoryId, string roomNumber)
@@ -106,7 +105,8 @@ namespace BLL.Services
                 throw new InvalidOperationException($"Не можна видалити кімнату {roomNumber}, оскільки в ній живуть студенти");
 
             dormitory.RemoveRoom(roomNumber);
-            _repository.SaveAll(_dormitories);
+
+            _repository.Update(dormitory);
         }
 
         public void CheckInStudent(int dormitoryId, string roomNumber, string studentID)
@@ -119,23 +119,24 @@ namespace BLL.Services
 
             var student = _studentService.GetStudentByID(studentID);
 
-            if (student.DormitoryRoomID.HasValue)
-                throw new InvalidOperationException($"Студент {studentID} вже поселений у кімнаті");
+            var isAlreadyOccupant = _repository.GetAll()
+                .Any(d => d.Rooms.Any(r => r.OccupantIDs.Contains(studentID)));
 
-            if (!room.HasAvailableSpace())
-                throw new RoomFullException($"Кімната {roomNumber} заповнена (макс: {room.MaxCapacity})");
+            if (isAlreadyOccupant)
+                throw new InvalidOperationException($"Студент {studentID} вже поселений в іншому гуртожитку/кімнаті");
 
             room.AddOccupant(studentID);
-            _repository.SaveAll(_dormitories);
 
-            student.DormitoryRoomID = GetRoomId(dormitoryId, roomNumber);
+            _repository.Update(dormitory);
+
         }
 
 
         public void CheckOutStudent(int dormitoryId, string studentID)
         {
             var dormitory = GetDormitoryById(dormitoryId);
-            var student = _studentService.GetStudentByID(studentID);
+
+            _studentService.GetStudentByID(studentID); 
 
             var room = dormitory.Rooms.FirstOrDefault(r => r.OccupantIDs.Contains(studentID));
 
@@ -143,14 +144,13 @@ namespace BLL.Services
                 throw new DormitoryNotFoundException($"Студента {studentID} не знайдено в гуртожитку {dormitory.Name}");
 
             room.RemoveOccupant(studentID);
-            _repository.SaveAll(_dormitories);
 
-            student.DormitoryRoomID = null;
+            _repository.Update(dormitory);
         }
 
         public Dormitory GetDormitoryById(int dormitoryId)
         {
-            var dormitory = _dormitories.FirstOrDefault(d => d.Id == dormitoryId);
+            var dormitory = _repository.GetById(dormitoryId);
             if (dormitory == null)
                 throw new DormitoryNotFoundException($"Гуртожиток з ID {dormitoryId} не знайдено");
 
@@ -159,65 +159,13 @@ namespace BLL.Services
 
         public List<Dormitory> GetAllDormitories()
         {
-            return _dormitories;
+            return _repository.GetAll();
         }
 
         public List<DormitoryRoom> GetAvailableRooms(int dormitoryId)
         {
             var dormitory = GetDormitoryById(dormitoryId);
             return dormitory.GetAvailableRooms();
-        }
-
-        /// Отримує інформацію про проживаючих у гуртожитку
-        public List<Student> GetOccupants(int dormitoryId)
-        {
-            var dormitory = GetDormitoryById(dormitoryId);
-            var occupants = new List<Student>();
-
-            foreach (var room in dormitory.Rooms)
-            {
-                foreach (var studentID in room.OccupantIDs)
-                {
-                    try
-                    {
-                        occupants.Add(_studentService.GetStudentByID(studentID));
-                    }
-                    catch (StudentNotFoundException)
-                    {
-                    }
-                }
-            }
-
-            return occupants;
-        }
-
-        public List<Student> GetRoomOccupants(int dormitoryId, string roomNumber)
-        {
-            var dormitory = GetDormitoryById(dormitoryId);
-            var room = dormitory.GetRoom(roomNumber);
-
-            if (room == null)
-                throw new DormitoryNotFoundException($"Кімнату {roomNumber} не знайдено");
-
-            var occupants = new List<Student>();
-            foreach (var studentID in room.OccupantIDs)
-            {
-                try
-                {
-                    occupants.Add(_studentService.GetStudentByID(studentID));
-                }
-                catch (StudentNotFoundException)
-                {
-                }
-            }
-
-            return occupants;
-        }
-
-
-        private int GetRoomId(int dormitoryId, string roomNumber)
-        {
-            return dormitoryId * 10000 + int.Parse(roomNumber);
         }
     }
 }

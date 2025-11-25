@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DAL;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,12 +7,13 @@ using System.Threading.Tasks;
 
 namespace BLL.Entities
 {
-    public class Dormitory
+    public class Dormitory : IEntity<int>
     {
         public int Id { get; set; }
         public string Name { get; set; }
         public string Address { get; set; }
         public List<DormitoryRoom> Rooms { get; set; }
+
         public Dormitory()
         {
             Rooms = new List<DormitoryRoom>();
@@ -22,6 +24,7 @@ namespace BLL.Entities
             Id = id;
             Name = name;
             Address = address;
+            Rooms = new List<DormitoryRoom>();
         }
 
         public void AddRoom(DormitoryRoom room)

@@ -2,6 +2,7 @@
 using DAL;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,14 +11,12 @@ namespace BLL.Services
 {
     public class GroupService
     {
-        private List<Group> _groups;
-        private readonly JsonRepository<Group> _repository;
+        private readonly IRepositiry<Group, int> _repository;
         private readonly StudentService _studentService;
 
         public GroupService(StudentService studentService)
         {
-            _repository = new JsonRepository<Group>("groups.json");
-            _groups = _repository.LoadAll();
+            _repository = new JsonRepository<Group, int>("groups.json");
             _studentService = studentService;
         }
 
@@ -32,10 +31,11 @@ namespace BLL.Services
             if (string.IsNullOrWhiteSpace(specialty))
                 throw new StudentInvalidDataException("Спеціальність не може бути порожньою");
 
-            if (_groups.Any(g => g.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+            var allGroups = _repository.GetAll();
+            if (allGroups.Any(g => g.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
                 throw new StudentInvalidDataException($"Група з назвою {name} вже існує");
 
-            int newId = _groups.Any() ? _groups.Max(g => g.Id) + 1 : 1;
+            int newId = (int)(object)_repository.GetNextId();
 
             var group = new Group
             {
@@ -45,8 +45,7 @@ namespace BLL.Services
                 Specialty = specialty.Trim()
             };
 
-            _groups.Add(group);
-            _repository.SaveAll(_groups);
+            _repository.Add(group);
         }
 
         public void DeleteGroup(int groupId)
@@ -55,15 +54,9 @@ namespace BLL.Services
 
             if (group.StudentIDs.Count > 0)
             {
-                foreach (var studentID in group.StudentIDs.ToList())
-                {
-
-                    _studentService.RemoveStudentFromGroup(studentID);
-                }
             }
 
-            _groups.Remove(group);
-            _repository.SaveAll(_groups);
+            _repository.Delete(groupId);
         }
 
         public void UpdateGroup(int groupId, string name, int course, string specialty)
@@ -79,43 +72,49 @@ namespace BLL.Services
             if (string.IsNullOrWhiteSpace(specialty))
                 throw new StudentInvalidDataException("Спеціальність не може бути порожньою");
 
-            if (_groups.Any(g => g.Id != groupId && g.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+            var allGroups = _repository.GetAll();
+            if (allGroups.Any(g => g.Id != groupId && g.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
                 throw new StudentInvalidDataException($"Група з назвою {name} вже існує");
+
 
             group.Name = name.Trim();
             group.Course = course;
             group.Specialty = specialty.Trim();
 
-            _repository.SaveAll(_groups);
+            _repository.Update(group);
         }
 
         public void AddStudentToGroup(int groupId, string studentID)
         {
             var group = GetGroupById(groupId);
-            var student = _studentService.GetStudentByID(studentID);
+            _studentService.GetStudentByID(studentID);
 
-            if (student.GroupID.HasValue)
-                throw new StudentAlreadyInGroupException($"Студент {studentID} вже у групі {student.GroupID}");
+            var isAlreadyInGroup = _repository.GetAll()
+                .Any(g => g.StudentIDs.Contains(studentID));
+
+            if (isAlreadyInGroup)
+                throw new StudentAlreadyInGroupException($"Студент {studentID} вже у іншій групі");
 
             group.AddStudent(studentID);
-            _repository.SaveAll(_groups);
 
-            _studentService.AssignStudentToGroup(studentID, groupId);
+            _repository.Update(group);
+
         }
 
         public void RemoveStudentFromGroup(int groupId, string studentID)
         {
             var group = GetGroupById(groupId);
 
-            group.RemoveStudent(studentID);
-            _repository.SaveAll(_groups);
+            _studentService.GetStudentByID(studentID);
 
-            _studentService.RemoveStudentFromGroup(studentID);
+            group.RemoveStudent(studentID);
+
+            _repository.Update(group);
         }
 
         public Group GetGroupById(int groupId)
         {
-            var group = _groups.FirstOrDefault(g => g.Id == groupId);
+            var group = _repository.GetById(groupId);
             if (group == null)
                 throw new GroupNotFoundException($"Групу з ID {groupId} не знайдено");
 
@@ -124,31 +123,13 @@ namespace BLL.Services
 
         public List<Group> GetAllGroups()
         {
-            return _groups;
+            return _repository.GetAll();
         }
 
-        public List<Student> GetStudentsInGroup(int groupId)
-        {
-            var group = GetGroupById(groupId);
-            var students = new List<Student>();
-
-            foreach (var studentID in group.StudentIDs)
-            {
-                try
-                {
-                    students.Add(_studentService.GetStudentByID(studentID));
-                }
-                catch (StudentNotFoundException)
-                {
-                }
-            }
-
-            return students;
-        }
 
         public int GetGroupCount()
         {
-            return _groups.Count;
+            return _repository.GetAll().Count;
         }
     }
 }

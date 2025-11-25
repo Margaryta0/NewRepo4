@@ -11,6 +11,7 @@ namespace BLL.Entities
         public string RoomNumber { get; set; }
         public int MaxCapacity { get; set; }
         public List<string> OccupantIDs { get; set; }
+
         public DormitoryRoom()
         {
             OccupantIDs = new List<string>();
@@ -64,6 +65,5 @@ namespace BLL.Entities
         {
             return OccupantIDs.Contains(studentID);
         }
-
     }
 }
