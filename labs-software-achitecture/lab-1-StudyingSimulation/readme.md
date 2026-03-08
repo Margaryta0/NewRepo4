@@ -63,7 +63,7 @@ classDiagram
 
     class LabWork {
         +IReadOnlyList~SubGroup~ SubGroups
-        +AddSubGroup(subGroup)
+        +DivideIntoSubGroups(Group group, int subGroupCount,EventHandler externalSizeChanged)
         +GetBlockReason(group) string
     }
 
