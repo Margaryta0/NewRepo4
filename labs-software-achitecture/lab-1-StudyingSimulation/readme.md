@@ -54,6 +54,9 @@ classDiagram
         +int Hours
         +Teacher ResponsibleTeacher
         +AssignTeacher(teacher)
+        +Start()
+        +Complete()
+        +Reset()
         +GetBlockReason(group) string
         +CanStart(group) bool
     }
