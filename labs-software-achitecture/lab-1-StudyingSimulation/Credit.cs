@@ -12,7 +12,7 @@ namespace UniversitySimulation
 
         public override string GetBlockReason(Group group)
         {
-            return null; // залік без умов — завжди можна
+            return null; 
         }
     }
 }
